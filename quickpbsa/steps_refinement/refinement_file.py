@@ -228,8 +228,12 @@ def improve_steps_file(kvout, kvjson, subtracted=True, percentile_step=90, lengt
     pool.join()
         
     # write result
-    result_out, result_array = step2result_from_json(jsonfile, kvout, flags, avg_laststep)
-    result_out = export_csv(result_out, result_array, outfile, parameters, comment)
+    try:
+        result_out, result_array = step2result_from_json(jsonfile, kvout, flags, avg_laststep)
+        result_out = export_csv(result_out, result_array, outfile, parameters, comment)
+    except:
+        result_out = None
+        logger.info('No result available to export csv')
     # log
     logmessage = '{:d} Traces '.format(N_traces)
     logger.info('Finished step 2 for ' + logmessage)
