@@ -96,41 +96,63 @@ def kv_file(infile, threshold, maxiter, outfolder=None, norm=1, max_memory=2.0, 
     
     # read in Traces
     Traces, basedf, comment, parameters, N_traces, N_frames = read_tracedf(infile)
+    logger.info('Completed read traces')
+
     # add KV parameter to parameter dictionary
     parameters.update({'KV_threshold': threshold,
                        'maxiter': maxiter,
                        'norm': norm,
                        'crop': crop,
                        'bg_frames': bgframes})
+    logger.info('Completed parameter update')
+
     # Norm and flip traces
     Traces = np.fliplr(Traces)/norm
+    logger.info('Normalised traces')
+
     
     # crop traces if specified (does not actually cut the data, only ignores part of it for analysis purposes)
     if crop:
         crop_index = crop_traces(Traces, threshold/2, bgframes)
+        logger.info('Cropped traces')
+
     
     # import json
     if os.path.isfile(jsonfile):
         trace_indices = kv_from_json(jsonfile, parameters, N_traces)
     else:
         trace_indices = np.arange(N_traces)
+        logger.info('Created trace indices')
+
     
     # need at least 2 cores for listener and worker
     if num_cores < 2:
         num_cores = 2
     
     # Set up pool of workers
+    logger.info('Setting up workers')
     manager = mp.Manager()
+    logger.info('Manager created')
+
     Q = manager.Queue()    
+    logger.info('Queue created')
+
     pool = mp.Pool(num_cores)
-    
+    logger.info('Pool created')
+
+
+    logger.info('Starting multithreading')
+
     # start listener
     pool.apply_async(listener,
                      (Q, crop_index, jsonfile, parameters, logger))
-    
+
     jobs = []      
     # Start workers on traces
+    logger.info('Starting workers on traces')
+
     for K in trace_indices:
+        logger.info(f'Processing {K}')
         # cropped trace
         trace = Traces[K, crop_index[K]:]
         job = pool.apply_async(worker,
@@ -147,6 +169,8 @@ def kv_file(infile, threshold, maxiter, outfolder=None, norm=1, max_memory=2.0, 
     pool.join()
         
     # write result
+    logger.info('Writing results')
+
     result_out, result_array = kvresult_from_json(jsonfile, Traces, basedf)
     result_out = export_csv(result_out, result_array, outfile, parameters, comment)
     # log
