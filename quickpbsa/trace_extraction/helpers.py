@@ -17,14 +17,17 @@ def pardict_from_image(imfile):
         # image size
         pardict['pix_x'] = int(tif.pages[0].tags['ImageWidth'].value)
         pardict['pix_y'] = int(tif.pages[0].tags['ImageLength'].value)
-        resolution_unit = int(tif.pages[0].tags['ResolutionUnit'].value)
-        resolution = tif.pages[0].tags['XResolution'].value
-        if resolution_unit == 3:
-            # resolution in cm
-            pardict['pix_size'] = 1e7 / resolution[0]
-        elif resolution_unit == 1:
-            # no unit defined, usually ratio of resolution tag values
-            pardict['pix_size'] = 1e3 * resolution[1] / resolution[0]
+        try:
+            resolution_unit = int(tif.pages[0].tags['ResolutionUnit'].value)
+            resolution = tif.pages[0].tags['XResolution'].value
+            if resolution_unit == 3:
+                # resolution in cm
+                pardict['pix_size'] = 1e7 / resolution[0]
+            elif resolution_unit == 1:
+                # no unit defined, usually ratio of resolution tag values
+                pardict['pix_size'] = 1e3 * resolution[1] / resolution[0]
+        except:
+            pardict['pix_size'] = 1
     return pardict
 
 def export_mask(indices, filename, pardict):
